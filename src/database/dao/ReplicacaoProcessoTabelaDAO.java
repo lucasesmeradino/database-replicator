@@ -9,9 +9,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReplicacoProcessoTabelaDAO {
+public class ReplicacaoProcessoTabelaDAO {
 
     private static final String SQL_SELECT_ALL_HABILITADO_BY_PROCESSO = "SELECT * FROM tb_replicacao_processo_tabela WHERE habilitado = true AND processo_id = ?";
+
+    private static final String SQL_SELECT_ALL = "SELECT * FROM tb_replicacao_processo_tabela";
 
     private static final String SQL_SELECT_BY_ID = "SELECT * FROM tb_replicacao_processo_tabela WHERE id = ?";
 
@@ -24,14 +26,16 @@ public class ReplicacoProcessoTabelaDAO {
     private final Connection conn;
 
     private final PreparedStatement psSqlSelectAllHabilitadoByProcesso;
+    private final PreparedStatement psSqlSelectAll;
     private final PreparedStatement psSqlSelectById;
     private final PreparedStatement psSqlInsert;
     private final PreparedStatement psSqlUpdate;
     private final PreparedStatement psSqlDelete;
 
-    public ReplicacoProcessoTabelaDAO(Connection conn) throws SQLException {
+    public ReplicacaoProcessoTabelaDAO(Connection conn) throws SQLException {
         this.conn = conn;
         this.psSqlSelectAllHabilitadoByProcesso = conn.prepareStatement(SQL_SELECT_ALL_HABILITADO_BY_PROCESSO);
+        this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
         this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);
         this.psSqlInsert = conn.prepareStatement(SQL_INSERT);
         this.psSqlUpdate = conn.prepareStatement(SQL_UPDATE);
@@ -42,6 +46,16 @@ public class ReplicacoProcessoTabelaDAO {
         psSqlSelectAllHabilitadoByProcesso.setLong(1, processoId);
         List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
         try (ResultSet rsProcessoTabelas = psSqlSelectAllHabilitadoByProcesso.executeQuery()) {
+            while (rsProcessoTabelas.next()) {
+                processoTabelas.add(mapToModel(rsProcessoTabelas));
+            }
+        }
+        return processoTabelas;
+    }
+
+    public List<ReplicacaoProcessoTabela> selectAllTabelas() throws SQLException {
+        List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
+        try (ResultSet rsProcessoTabelas = psSqlSelectAll.executeQuery()) {
             while (rsProcessoTabelas.next()) {
                 processoTabelas.add(mapToModel(rsProcessoTabelas));
             }

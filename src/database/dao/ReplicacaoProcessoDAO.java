@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReplicacoProcessoDAO {
+public class ReplicacaoProcessoDAO {
 
     private static final String SQL_SELECT_ALL = "SELECT * FROM tb_replicacao_processo";
 
@@ -29,7 +29,7 @@ public class ReplicacoProcessoDAO {
     private final PreparedStatement psSqlUpdate;
     private final PreparedStatement psSqlDelete;
 
-    public ReplicacoProcessoDAO(Connection conn) throws SQLException {
+    public ReplicacaoProcessoDAO(Connection conn) throws SQLException {
         this.conn = conn;
         this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
         this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);

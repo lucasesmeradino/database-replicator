@@ -13,6 +13,8 @@ public class ReplicacaoDirecaoDAO {
 
     private static final String SQL_SELECT_ALL_HABILITADO_BY_PROCESSO = "SELECT * FROM tb_replicacao_direcao WHERE habilitado = true AND processo_id = ?";
 
+    private static final String SQL_SELECT_ALL = "SELECT * FROM tb_replicacao_direcao";
+
     private static final String SQL_SELECT_BY_ID = "SELECT * FROM tb_replicacao_direcao WHERE id = ?";
 
     private static final String SQL_INSERT = "INSERT INTO tb_replicacao_direcao (processo_id, conexao_origem, conexao_destino, usuario_origem, usuario_destino, senha_origem, senha_destino, habilitado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -24,6 +26,7 @@ public class ReplicacaoDirecaoDAO {
     private final Connection conn;
 
     private final PreparedStatement psSqlSelectAllHabilitadoByProcesso;
+    private final PreparedStatement psSqlSelectAll;
     private final PreparedStatement psSqlSelectById;
     private final PreparedStatement psSqlInsert;
     private final PreparedStatement psSqlUpdate;
@@ -32,6 +35,7 @@ public class ReplicacaoDirecaoDAO {
     public ReplicacaoDirecaoDAO(Connection conn) throws SQLException {
         this.conn = conn;
         this.psSqlSelectAllHabilitadoByProcesso = conn.prepareStatement(SQL_SELECT_ALL_HABILITADO_BY_PROCESSO);
+        this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
         this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);
         this.psSqlInsert = conn.prepareStatement(SQL_INSERT);
         this.psSqlUpdate = conn.prepareStatement(SQL_UPDATE);
@@ -49,6 +53,16 @@ public class ReplicacaoDirecaoDAO {
         return replicacaoDirecoes;
     }
 
+    public List<ReplicacaoDirecao> selectAllDirecoes() throws SQLException {
+        List<ReplicacaoDirecao> replicacaoDirecaos = new ArrayList<>();
+        try (ResultSet rsReplicacaoDirecoes = psSqlSelectAll.executeQuery()) {
+            while (rsReplicacaoDirecoes.next()) {
+                replicacaoDirecaos.add(mapToModel(rsReplicacaoDirecoes));
+            }
+        }
+        return replicacaoDirecaos;
+    }
+
     public ReplicacaoDirecao selectDirecaoById(long processoId) throws SQLException {
         psSqlSelectById.setLong(1, processoId);
         try (ResultSet rsReplicacaoDirecao = psSqlSelectById.executeQuery()) {
@@ -56,15 +70,15 @@ public class ReplicacaoDirecaoDAO {
         }
     }
 
-    public void insertDirecao(ReplicacaoDirecao processoTabela) throws SQLException {
-        psSqlUpdate.setLong(1, processoTabela.getProcessoId());
-        psSqlUpdate.setString(2, processoTabela.getConexaoOrigem());
-        psSqlUpdate.setString(3, processoTabela.getConexaoDestino());
-        psSqlUpdate.setString(4, processoTabela.getUsuarioOrigem());
-        psSqlUpdate.setString(5, processoTabela.getUsuarioDestino());
-        psSqlUpdate.setString(6, processoTabela.getSenhaOrigem());
-        psSqlUpdate.setString(7, processoTabela.getSenhaDestino());
-        psSqlUpdate.setBoolean(8, processoTabela.isHabilitado());
+    public void insertDirecao(ReplicacaoDirecao processoDirecao) throws SQLException {
+        psSqlInsert.setLong(1, processoDirecao.getProcessoId());
+        psSqlInsert.setString(2, processoDirecao.getConexaoOrigem());
+        psSqlInsert.setString(3, processoDirecao.getConexaoDestino());
+        psSqlInsert.setString(4, processoDirecao.getUsuarioOrigem());
+        psSqlInsert.setString(5, processoDirecao.getUsuarioDestino());
+        psSqlInsert.setString(6, processoDirecao.getSenhaOrigem());
+        psSqlInsert.setString(7, processoDirecao.getSenhaDestino());
+        psSqlInsert.setBoolean(8, processoDirecao.isHabilitado());
         psSqlInsert.executeUpdate();
     }
 

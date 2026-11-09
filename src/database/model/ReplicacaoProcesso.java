@@ -10,6 +10,10 @@ public class ReplicacaoProcesso {
     public ReplicacaoProcesso() {
     }
 
+    public ReplicacaoProcesso(long id) {
+        this.id = id;
+    }
+
     public long getId() {
         return id;
     }
