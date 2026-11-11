@@ -89,3 +89,63 @@ ALTER TABLE tb_replicacao_processo_tabela
 ALTER TABLE tb_replicacao_direcao
     ADD CONSTRAINT fk_replicacao_processo_direcao
         FOREIGN KEY (processo_id) REFERENCES tb_replicacao_processo(id);
+
+CREATE TABLE replication_queue(
+  id BIGSERIAL PRIMARY KEY,
+  table_name TEXT NOT NULL,
+  row_id BIGINT NOT NULL,
+  operation CHAR(1) NOT NULL CHECK (operation IN ('U', 'D')),
+  ocurred_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMP NULL
+);
+
+CREATE INDEX idx_replication_queue_pending
+    ON replication_queue (processed_at, ocurred_at);
+
+CREATE INDEX idx_replication_queue_table_row
+    ON replication_queue (table_name, row_id);
+
+CREATE FUNCTION trg_enqueue_replication()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS $$
+DECLARE
+v_op CHAR(1);
+	v_row_id BIGINT;
+BEGIN
+	IF TG_OP = 'UPDATE' THEN
+		v_op := 'U';
+		v_row_id := NEW.id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		v_op := 'D';
+		v_row_id := OLD.id;
+ELSE
+		RETURN NULL;
+END IF;
+
+INSERT INTO replication_queue (table_name, row_id, operation)
+VALUES (TG_TABLE_NAME, v_row_id, v_op);
+
+RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER funcionarios_enqueue_replication
+    AFTER UPDATE OR DELETE ON tb_funcionarios
+FOR EACH ROW
+EXECUTE FUNCTION trg_enqueue_replication();
+
+CREATE TRIGGER clientes_enqueue_replication
+    AFTER UPDATE OR DELETE ON tb_clientes
+FOR EACH ROW
+EXECUTE FUNCTION trg_enqueue_replication();
+
+CREATE TRIGGER abastecimentos_enqueue_replication
+    AFTER UPDATE OR DELETE ON tb_abastecimentos
+FOR EACH ROW
+EXECUTE FUNCTION trg_enqueue_replication();
+
+CREATE TRIGGER bombas_enqueue_replication
+    AFTER UPDATE OR DELETE ON tb_bombas
+FOR EACH ROW
+EXECUTE FUNCTION trg_enqueue_replication();

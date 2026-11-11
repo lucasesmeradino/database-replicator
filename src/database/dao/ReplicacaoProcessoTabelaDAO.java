@@ -17,6 +17,8 @@ public class ReplicacaoProcessoTabelaDAO {
 
     private static final String SQL_SELECT_BY_ID = "SELECT * FROM tb_replicacao_processo_tabela WHERE id = ?";
 
+    private static final String SQL_SELECT_TABELA_DESTINO_BY_TABELA_ORIGEM = "SELECT tabela_destino FROM tb_replicacao_processo_tabela WHERE tabela_origem = ? AND processo_id = ? AND habilitado = true";
+
     private static final String SQL_INSERT = "INSERT INTO tb_replicacao_processo_tabela (processo_id, tabela_origem, tabela_destino, ordem, habilitado, ds_where) VALUES (?, ?, ?, ?, ?, ?)";
 
     private static final String SQL_UPDATE = "UPDATE tb_replicacao_processo_tabela SET processo_id = ?, tabela_origem = ?, tabela_destino = ?, ordem = ?, habilitado = ?, ds_where = ? WHERE id = ?";
@@ -28,6 +30,7 @@ public class ReplicacaoProcessoTabelaDAO {
     private final PreparedStatement psSqlSelectAllHabilitadoByProcesso;
     private final PreparedStatement psSqlSelectAll;
     private final PreparedStatement psSqlSelectById;
+    private final PreparedStatement psSqlSelectTabelaDestinoByTabelaOrigem;
     private final PreparedStatement psSqlInsert;
     private final PreparedStatement psSqlUpdate;
     private final PreparedStatement psSqlDelete;
@@ -37,6 +40,7 @@ public class ReplicacaoProcessoTabelaDAO {
         this.psSqlSelectAllHabilitadoByProcesso = conn.prepareStatement(SQL_SELECT_ALL_HABILITADO_BY_PROCESSO);
         this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
         this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);
+        this.psSqlSelectTabelaDestinoByTabelaOrigem = conn.prepareStatement(SQL_SELECT_TABELA_DESTINO_BY_TABELA_ORIGEM);
         this.psSqlInsert = conn.prepareStatement(SQL_INSERT);
         this.psSqlUpdate = conn.prepareStatement(SQL_UPDATE);
         this.psSqlDelete = conn.prepareStatement(SQL_DELETE);
@@ -67,6 +71,14 @@ public class ReplicacaoProcessoTabelaDAO {
         psSqlSelectById.setLong(1, processoId);
         try (ResultSet rsProcessoTabela = psSqlSelectById.executeQuery()) {
             return rsProcessoTabela.next() ? mapToModel(rsProcessoTabela) : null;
+        }
+    }
+
+    public String selectTabelaDestinoByTabelaOrigem(String nomeTabelaOrigem, long processoId) throws SQLException {
+        psSqlSelectTabelaDestinoByTabelaOrigem.setString(1, nomeTabelaOrigem);
+        psSqlSelectTabelaDestinoByTabelaOrigem.setLong(2, processoId);
+        try (ResultSet rsProcessoTabela = psSqlSelectTabelaDestinoByTabelaOrigem.executeQuery()) {
+            return rsProcessoTabela != null && rsProcessoTabela.next() ? rsProcessoTabela.getString(1) : null;
         }
     }
 

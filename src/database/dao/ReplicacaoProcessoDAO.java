@@ -13,6 +13,8 @@ public class ReplicacaoProcessoDAO {
 
     private static final String SQL_SELECT_ALL = "SELECT * FROM tb_replicacao_processo";
 
+    private static final String SQL_SELECT_ALL_HABILITADOS = "SELECT * FROM tb_replicacao_processo WHERE habilitado = true";
+
     private static final String SQL_SELECT_BY_ID = "SELECT * FROM tb_replicacao_processo WHERE id = ?";
 
     private static final String SQL_INSERT = "INSERT INTO tb_replicacao_processo (processo, descricao, habilitado) VALUES (?, ?, ?)";
@@ -24,6 +26,7 @@ public class ReplicacaoProcessoDAO {
     private final Connection conn;
 
     private final PreparedStatement psSqlSelectAll;
+    private final PreparedStatement psSqlSelectAllHabilitados;
     private final PreparedStatement psSqlSelectById;
     private final PreparedStatement psSqlInsert;
     private final PreparedStatement psSqlUpdate;
@@ -32,6 +35,7 @@ public class ReplicacaoProcessoDAO {
     public ReplicacaoProcessoDAO(Connection conn) throws SQLException {
         this.conn = conn;
         this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
+        this.psSqlSelectAllHabilitados = conn.prepareStatement(SQL_SELECT_ALL_HABILITADOS);
         this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);
         this.psSqlInsert = conn.prepareStatement(SQL_INSERT);
         this.psSqlUpdate = conn.prepareStatement(SQL_UPDATE);
@@ -39,6 +43,16 @@ public class ReplicacaoProcessoDAO {
     }
 
     public List<ReplicacaoProcesso> selectAllProcessos() throws SQLException {
+        List<ReplicacaoProcesso> processos = new ArrayList<>();
+        try (ResultSet rsProcessos = psSqlSelectAll.executeQuery()) {
+            while (rsProcessos.next()) {
+                processos.add(mapToModel(rsProcessos));
+            }
+        }
+        return processos;
+    }
+
+    public List<ReplicacaoProcesso> selectAllProcessosHabilitados() throws SQLException {
         List<ReplicacaoProcesso> processos = new ArrayList<>();
         try (ResultSet rsProcessos = psSqlSelectAll.executeQuery()) {
             while (rsProcessos.next()) {

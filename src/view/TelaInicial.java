@@ -1,5 +1,7 @@
 package view;
 
+import service.ExecutorReplicacaoService;
+
 import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
@@ -28,7 +30,25 @@ public class TelaInicial extends JFrame {
         JMenu menuCadastro = new JMenu("Cadastro");
 
         JMenuItem menuItemExecutar = new JMenuItem("Executar");
-        menuItemExecutar.addActionListener(e -> {});
+        menuItemExecutar.addActionListener(e -> {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        try {
+                            new ExecutorReplicacaoService(connection);
+                        } catch (SQLException ex) {
+                            JOptionPane.showMessageDialog(null, "Falha na execução da replicação: " + ex.getLocalizedMessage());
+                        }
+                        try {
+                            Thread.sleep(60000);
+                        } catch (InterruptedException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                }
+            }).start();
+        });
 
         JMenuItem menuItemSair = new JMenuItem("Sair");
         menuItemSair.addActionListener(e -> {
