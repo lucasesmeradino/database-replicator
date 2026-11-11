@@ -130,14 +130,4 @@ public class TelaInicial extends JFrame {
             JOptionPane.showMessageDialog(this, "Erro ao abrir a tela de processos" + ex.getLocalizedMessage());
         }
     }
-
-    static void main(String[] args) {
-        try {
-            Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/db_controle_replicacao", "postgres", "postgres");
-            TelaInicial telaInicial = new TelaInicial(connection);
-            SwingUtilities.invokeLater(() -> { telaInicial.setVisible(true); });
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null, "Não foi possível iniciar a conexão com o banco de dados.");
-        }
-    }
 }
