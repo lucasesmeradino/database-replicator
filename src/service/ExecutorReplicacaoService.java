@@ -1,6 +1,7 @@
 package service;
 
 import database.dao.*;
+import database.dao.result.QueryResult;
 import database.model.PendenciaReplicacao;
 import database.model.ReplicacaoDirecao;
 import database.model.ReplicacaoProcesso;
@@ -102,15 +103,16 @@ public class ExecutorReplicacaoService {
     public void executarReplicacaoPorTabela(ReplicacaoProcessoTabela tabela) {
         ReplicacaoDadosOrigemDAO replicacaoDadosOrigemDao = new ReplicacaoDadosOrigemDAO(conexaoBancoOrigem);
         ReplicacaoDadosDestinoDAO replicacaoDadosDestinoDao = new ReplicacaoDadosDestinoDAO(conexaoBancoDestino);
-        try (ResultSet rsSelectTabelaOrigem = replicacaoDadosOrigemDao.executeSelectTableByMaxIdDestinationDb(tabela.getTabelaOrigem(),
-                tabela.getDsWhere(), replicacaoDadosDestinoDao.getTableMaxId(tabela.getTabelaDestino()))) {
-            int columnCount = rsSelectTabelaOrigem.getMetaData().getColumnCount();
-            String insertBancoDestino = replicacaoDadosDestinoDao.createInsertByResultSet(rsSelectTabelaOrigem.getMetaData(), tabela.getTabelaDestino());
+        try {
+            QueryResult queryResultDadosOrigem = replicacaoDadosOrigemDao.executeSelectTableByMaxIdDestinationDb(tabela.getTabelaOrigem(),
+                    tabela.getDsWhere(), replicacaoDadosDestinoDao.getTableMaxId(tabela.getTabelaDestino()));
+            int columnCount = queryResultDadosOrigem.getColumnNames().size();
+            String insertBancoDestino = replicacaoDadosDestinoDao.createInsertByResultSet(queryResultDadosOrigem.getColumnNames(), tabela.getTabelaDestino());
             conexaoBancoDestino.setAutoCommit(false);
             try (PreparedStatement psInsertDadosDestino = conexaoBancoDestino.prepareStatement(insertBancoDestino)) {
-                while (rsSelectTabelaOrigem.next()) {
+                for (Map<String, Object> rowColumn : queryResultDadosOrigem.getRows()) {
                     for (int i = 1; i <= columnCount; i++) {
-                        psInsertDadosDestino.setObject(i, rsSelectTabelaOrigem.getObject(i));
+                        psInsertDadosDestino.setObject(i, rowColumn.get(queryResultDadosOrigem.getColumnNames().get(i - 1)));
                     }
                     psInsertDadosDestino.addBatch();
                 }
@@ -197,12 +199,14 @@ public class ExecutorReplicacaoService {
             }
             System.out.printf("Registro %d removido da tabela %s do banco destino%n", pendenciaReplicacao.getRowId(), nomeTabelaBancoDestino);
         } else if (pendenciaReplicacao.getOperation().equalsIgnoreCase("U")) {
-            try (ResultSet rsDadosRegistroOrigem = replicacaoDadosOrigemDao.executeSelectTableById(pendenciaReplicacao.getTableName(), pendenciaReplicacao.getRowId())) {
-                ResultSetMetaData rsMetadata = rsDadosRegistroOrigem.getMetaData();
+            try {
+                QueryResult queryResultRegistroOrigem = replicacaoDadosOrigemDao.executeSelectTableById(pendenciaReplicacao.getTableName(), pendenciaReplicacao.getRowId());
+                List<String> columnNames = queryResultRegistroOrigem.getColumnNames();
+
                 StringBuilder dsColumnsUpdate = new StringBuilder();
                 List<Integer> columnsIndexAdded = new ArrayList<>();
-                for (int i = 1 ; i <= rsMetadata.getColumnCount(); i++) {
-                    String columnName = rsMetadata.getColumnName(i);
+                for (int i = 1 ; i <= columnNames.size(); i++) {
+                    String columnName = columnNames.get(i);
                     if (columnName.equalsIgnoreCase("id")) continue;
                     dsColumnsUpdate.append(columnName).append(" = ?, ");
                     columnsIndexAdded.add(i);
@@ -210,10 +214,10 @@ public class ExecutorReplicacaoService {
 
                 String sqlUpdateDadosDestino = String.format("UPDATE %s SET %s WHERE id = %d", nomeTabelaBancoDestino, dsColumnsUpdate.substring(0, dsColumnsUpdate.length() - 2), processoId);
                 try (PreparedStatement psUpdateDadosDestino = conexaoBancoDestino.prepareStatement(sqlUpdateDadosDestino)) {
-                    if (rsDadosRegistroOrigem.next()) {
+                    if (!queryResultRegistroOrigem.getRows().isEmpty()) {
                         int parameterIndex = 1;
                         for (Integer columnIndex : columnsIndexAdded) {
-                            psUpdateDadosDestino.setObject(parameterIndex++, rsDadosRegistroOrigem.getObject(columnIndex));
+                            psUpdateDadosDestino.setObject(parameterIndex++, queryResultRegistroOrigem.getRows().getFirst().get(columnNames.get(columnIndex)));
                         }
                         psUpdateDadosDestino.executeUpdate();
                         System.out.printf("Registro %d da tabela %s atualizado no banco destino%n", pendenciaReplicacao.getRowId(), nomeTabelaBancoDestino);

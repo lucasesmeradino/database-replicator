@@ -2,10 +2,7 @@ package database.dao;
 
 import database.model.ReplicacaoProcessoTabela;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,85 +24,84 @@ public class ReplicacaoProcessoTabelaDAO {
 
     private final Connection conn;
 
-    private final PreparedStatement psSqlSelectAllHabilitadoByProcesso;
-    private final PreparedStatement psSqlSelectAll;
-    private final PreparedStatement psSqlSelectById;
-    private final PreparedStatement psSqlSelectTabelaDestinoByTabelaOrigem;
-    private final PreparedStatement psSqlInsert;
-    private final PreparedStatement psSqlUpdate;
-    private final PreparedStatement psSqlDelete;
-
     public ReplicacaoProcessoTabelaDAO(Connection conn) throws SQLException {
         this.conn = conn;
-        this.psSqlSelectAllHabilitadoByProcesso = conn.prepareStatement(SQL_SELECT_ALL_HABILITADO_BY_PROCESSO);
-        this.psSqlSelectAll = conn.prepareStatement(SQL_SELECT_ALL);
-        this.psSqlSelectById = conn.prepareStatement(SQL_SELECT_BY_ID);
-        this.psSqlSelectTabelaDestinoByTabelaOrigem = conn.prepareStatement(SQL_SELECT_TABELA_DESTINO_BY_TABELA_ORIGEM);
-        this.psSqlInsert = conn.prepareStatement(SQL_INSERT);
-        this.psSqlUpdate = conn.prepareStatement(SQL_UPDATE);
-        this.psSqlDelete = conn.prepareStatement(SQL_DELETE);
     }
 
     public List<ReplicacaoProcessoTabela> selectAllTabelasHabilitadasByProcesso(long processoId) throws SQLException {
-        psSqlSelectAllHabilitadoByProcesso.setLong(1, processoId);
-        List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
-        try (ResultSet rsProcessoTabelas = psSqlSelectAllHabilitadoByProcesso.executeQuery()) {
-            while (rsProcessoTabelas.next()) {
-                processoTabelas.add(mapToModel(rsProcessoTabelas));
+        try (PreparedStatement psSelectAll = conn.prepareStatement(SQL_SELECT_ALL_HABILITADO_BY_PROCESSO)) {
+            psSelectAll.setLong(1, processoId);
+            List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
+            try (ResultSet rsProcessoTabelas = psSelectAll.executeQuery()) {
+                while (rsProcessoTabelas.next()) {
+                    processoTabelas.add(mapToModel(rsProcessoTabelas));
+                }
             }
+            return processoTabelas;
         }
-        return processoTabelas;
     }
 
     public List<ReplicacaoProcessoTabela> selectAllTabelas() throws SQLException {
-        List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
-        try (ResultSet rsProcessoTabelas = psSqlSelectAll.executeQuery()) {
-            while (rsProcessoTabelas.next()) {
-                processoTabelas.add(mapToModel(rsProcessoTabelas));
+        try (Statement stSelectAll = conn.createStatement()) {
+            List<ReplicacaoProcessoTabela> processoTabelas = new ArrayList<>();
+            try (ResultSet rsProcessoTabelas = stSelectAll.executeQuery(SQL_SELECT_ALL)) {
+                while (rsProcessoTabelas.next()) {
+                    processoTabelas.add(mapToModel(rsProcessoTabelas));
+                }
             }
+            return processoTabelas;
         }
-        return processoTabelas;
     }
 
     public ReplicacaoProcessoTabela selectTabelaById(long processoId) throws SQLException {
-        psSqlSelectById.setLong(1, processoId);
-        try (ResultSet rsProcessoTabela = psSqlSelectById.executeQuery()) {
-            return rsProcessoTabela.next() ? mapToModel(rsProcessoTabela) : null;
+        try (PreparedStatement psSelectByid = conn.prepareStatement(SQL_SELECT_BY_ID)) {
+            psSelectByid.setLong(1, processoId);
+            try (ResultSet rsProcessoTabela = psSelectByid.executeQuery()) {
+                return rsProcessoTabela.next() ? mapToModel(rsProcessoTabela) : null;
+            }
         }
     }
 
     public String selectTabelaDestinoByTabelaOrigem(String nomeTabelaOrigem, long processoId) throws SQLException {
-        psSqlSelectTabelaDestinoByTabelaOrigem.setString(1, nomeTabelaOrigem);
-        psSqlSelectTabelaDestinoByTabelaOrigem.setLong(2, processoId);
-        try (ResultSet rsProcessoTabela = psSqlSelectTabelaDestinoByTabelaOrigem.executeQuery()) {
-            return rsProcessoTabela != null && rsProcessoTabela.next() ? rsProcessoTabela.getString(1) : null;
+        try (PreparedStatement psSelectTabelaDestino = conn.prepareStatement(SQL_SELECT_TABELA_DESTINO_BY_TABELA_ORIGEM)) {
+            psSelectTabelaDestino.setString(1, nomeTabelaOrigem);
+            psSelectTabelaDestino.setLong(2, processoId);
+            try (ResultSet rsProcessoTabela = psSelectTabelaDestino.executeQuery()) {
+                return rsProcessoTabela != null && rsProcessoTabela.next() ? rsProcessoTabela.getString(1) : null;
+            }
         }
     }
 
     public void insertTabela(ReplicacaoProcessoTabela processoTabela) throws SQLException {
-        psSqlInsert.setLong(1, processoTabela.getProcessoId());
-        psSqlInsert.setString(2, processoTabela.getTabelaOrigem());
-        psSqlInsert.setString(3, processoTabela.getTabelaDestino());
-        psSqlInsert.setInt(4, processoTabela.getOrdem());
-        psSqlInsert.setBoolean(5, processoTabela.isHabilitado());
-        psSqlInsert.setString(6, processoTabela.getDsWhere());
-        psSqlInsert.executeUpdate();
+        try (PreparedStatement sqlInsert = conn.prepareStatement(SQL_INSERT)) {
+            sqlInsert.setLong(1, processoTabela.getProcessoId());
+            sqlInsert.setString(2, processoTabela.getTabelaOrigem());
+            sqlInsert.setString(3, processoTabela.getTabelaDestino());
+            sqlInsert.setInt(4, processoTabela.getOrdem());
+            sqlInsert.setBoolean(5, processoTabela.isHabilitado());
+            sqlInsert.setString(6, processoTabela.getDsWhere());
+            sqlInsert.executeUpdate();
+        }
     }
 
     public void updateTabela(ReplicacaoProcessoTabela processoTabela) throws SQLException {
-        psSqlUpdate.setLong(1, processoTabela.getProcessoId());
-        psSqlUpdate.setString(2, processoTabela.getTabelaOrigem());
-        psSqlUpdate.setString(3, processoTabela.getTabelaDestino());
-        psSqlUpdate.setInt(4, processoTabela.getOrdem());
-        psSqlUpdate.setBoolean(5, processoTabela.isHabilitado());
-        psSqlUpdate.setString(6, processoTabela.getDsWhere());
-        psSqlUpdate.setLong(7, processoTabela.getId());
-        psSqlUpdate.executeUpdate();
+        try (PreparedStatement psUpdate = conn.prepareStatement(SQL_UPDATE)) {
+            psUpdate.setLong(1, processoTabela.getProcessoId());
+            psUpdate.setString(2, processoTabela.getTabelaOrigem());
+            psUpdate.setString(3, processoTabela.getTabelaDestino());
+            psUpdate.setInt(4, processoTabela.getOrdem());
+            psUpdate.setBoolean(5, processoTabela.isHabilitado());
+            psUpdate.setString(6, processoTabela.getDsWhere());
+            psUpdate.setLong(7, processoTabela.getId());
+            psUpdate.executeUpdate();
+        }
     }
 
     public void deleteTabela(long processoId) throws SQLException {
-        psSqlDelete.setLong(1, processoId);
-        psSqlDelete.executeUpdate();
+        try (PreparedStatement psDelete = conn.prepareStatement(SQL_DELETE)) {
+            psDelete.setLong(1, processoId);
+            psDelete.executeUpdate();
+        }
     }
 
     private ReplicacaoProcessoTabela mapToModel(ResultSet rs) throws SQLException {

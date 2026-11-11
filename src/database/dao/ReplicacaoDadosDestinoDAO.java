@@ -1,6 +1,7 @@
 package database.dao;
 
 import java.sql.*;
+import java.util.List;
 
 public class ReplicacaoDadosDestinoDAO {
 
@@ -12,7 +13,7 @@ public class ReplicacaoDadosDestinoDAO {
 
     public void executeDeleteTableById(String nomeTabela, long id) throws SQLException {
         String sqlDeleteById = "DELETE FROM %s WHERE id = %d".formatted(nomeTabela, id);
-        destinationDbConnection.createStatement().executeUpdate(sqlDeleteById);
+        try (Statement stDeleteById = destinationDbConnection.createStatement(); ResultSet rsDeleteById = stDeleteById.executeQuery(sqlDeleteById)){}
     }
 
     public long getTableMaxId(String nomeTabela) throws SQLException {
@@ -26,10 +27,10 @@ public class ReplicacaoDadosDestinoDAO {
         return maxId;
     }
 
-    public String createInsertByResultSet(ResultSetMetaData resultSetMetaData, String nomeTabela) throws SQLException {
+    public String createInsertByResultSet(List<String> columnNames, String nomeTabela) throws SQLException {
         StringBuilder dsColumnsInsert = new StringBuilder(), dsParametersInsert = new StringBuilder();
-        for (int i = 1 ; i <= resultSetMetaData.getColumnCount(); i++) {
-            dsColumnsInsert.append(resultSetMetaData.getColumnName(i)).append(", ");
+        for (int i = 0 ; i < columnNames.size(); i++) {
+            dsColumnsInsert.append(columnNames.get(i)).append(", ");
             dsParametersInsert.append("?, ");
         }
         return String.format("INSERT INTO %s (%s) VALUES (%s)",
